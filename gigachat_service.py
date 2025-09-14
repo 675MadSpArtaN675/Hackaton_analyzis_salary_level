@@ -4,10 +4,14 @@ from gigachat.models import Messages, MessagesRole, Chat
 import os
 
 class GigaChat_Service:
+    __start_message: str
+
     __service: GigaChat
     __history: Chat
 
     def __init__(self, key_token: str, start_message: str):
+        self.__start_message = start_message
+
         self.__service = GigaChat(credentials=key_token)
         self.reset_chat_history(start_message)
 
@@ -37,7 +41,13 @@ class GigaChat_Service:
         os.remove(file_path)
         return uploaded_file
         
-    def reset_chat_history(self, start_message: str):
+    def reset_chat_history(self, start_message: str = None):
+        if start_message is None:
+            if self.__start_message is not None:
+                start_message = self.__start_message
+            else:
+                return
+        
         self.__history.messages.clear()
         self.__history.messages.append(Messages(content=start_message, role=MessagesRole.SYSTEM))
 

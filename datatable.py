@@ -1,11 +1,9 @@
 from dotenv import find_dotenv, load_dotenv
-from pprint import pprint, pp
 
 from month_data_parser import MoneyDataParser, MoneyDataFilesDownloader
 
 import os, re
 
-import asyncio as aio
 import pandas as pd
 import pdfminer.high_level as pmhl
 import pdfminer.layout as pml
@@ -14,17 +12,24 @@ class PdfStatisticsParser:
     __money_parser: MoneyDataParser
     __files_downloader: MoneyDataFilesDownloader
 
+    __year: int
+
     @staticmethod
     def GetMonthName(filename: str):
         return re.search(r"области\s(.*?)\s*\d{4}\s*года\.pdf$", filename).group(1)
 
-    def __init__(self, url: str):
+    def __init__(self, url: str, year: int):
         load_dotenv(find_dotenv())
+
+        self.__year = year
 
         self.__money_parser = MoneyDataParser(url)
         self.__files_downloader = MoneyDataFilesDownloader()
 
-    def ParseFiles(self, year :int | str):
+    def ParseFiles(self, year :int = None):
+        if year is not None:
+            year = self.__year;
+        
         files_start = "./files_downloaded"
 
         if (not os.path.exists(files_start)):
@@ -96,5 +101,3 @@ if __name__ == "__main__":
 
     psp = PdfStatisticsParser(url)
     data = psp.ParseFiles(2025)
-    
-    

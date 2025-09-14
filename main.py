@@ -4,7 +4,6 @@ from pages.root_page import RootPage
 
 import flet as f
 
-import os
 
 load_dotenv(find_dotenv())
 
