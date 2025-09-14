@@ -9,6 +9,7 @@ import pdfminer.high_level as pmhl
 import pdfminer.layout as pml
 
 class PdfStatisticsParser:
+    __data: pd.DataFrame = None
     __money_parser: MoneyDataParser
     __files_downloader: MoneyDataFilesDownloader
 
@@ -26,8 +27,11 @@ class PdfStatisticsParser:
         self.__money_parser = MoneyDataParser(url)
         self.__files_downloader = MoneyDataFilesDownloader()
 
+    def UpdateYear(self, year: int):
+        self.__year = year
+    
     def ParseFiles(self, year :int = None):
-        if year is not None:
+        if year is None:
             year = self.__year;
         
         files_start = "./files_downloaded"
@@ -38,12 +42,19 @@ class PdfStatisticsParser:
         sorted_years = self.__get_files_names(year)
         self.__files_downloader.DownloadFiles(sorted_years)
 
-        files_data = pd.DataFrame(self.__get_data_from_files(files_start))
-        files_data.to_excel(excel_writer="./salaries.xlsx", 
-                  sheet_name="Уровень зарплат за текущий год")
+        self.__data = pd.DataFrame(data=self.__get_data_from_files(files_start))
         
-        return files_data
+        return self.__data
+    
+    def CreateExcelFile(self, filename: str = None):
+        name = os.getenv("EXCEL_FILE_NAME") if filename is None else filename
 
+        return self.__data.to_excel(excel_writer=f"./{name}", 
+                  sheet_name="Уровень зарплат за текущий год")
+
+    def GetOutputFileName(self):
+        return os.getenv("EXCEL_FILE_NAME")
+    
     def __get_files_names(self, year: int):
         docs = self.__money_parser.GetDocLinks(os.environ["TITLE_TO_FOUND"])
         filtered = self.__money_parser.FilterByYear(docs, year)
@@ -99,5 +110,5 @@ class PdfStatisticsParser:
 if __name__ == "__main__":
     url = "https://36.rosstat.gov.ru/folder/26390"
 
-    psp = PdfStatisticsParser(url)
-    data = psp.ParseFiles(2025)
+    psp = PdfStatisticsParser(url, 2025)
+    data = psp.ParseFiles()

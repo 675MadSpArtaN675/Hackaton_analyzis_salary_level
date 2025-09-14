@@ -1,65 +1,58 @@
-from typing import Sequence, Callable
+from typing import Sequence, Callable, Any
+
 import flet as f
+import pandas as pd
 
 class RootPage(f.View):
-    __page: f.Page = None
-    __file_choose_button: f.Button
-    __file_parse_button: f.Button
+    __situation_func: Callable = None
 
-    __parsing_func: Callable = None
-    __choose_func: Callable = None
-
-    def __init__(self, controls: Sequence[f.Control] = (), page: f.Page = None):
+    def __init__(self, controls: Sequence[f.Control] = ()):
         super().__init__("/", controls=controls)
 
-        if (page is not None):
-            self.__page = page
+    def SetSituationButtonFunc(self, func: Callable[[f.ControlEvent], Any]):
+        self.__situation_func = func
 
     def SetupUI(self):
-        self.__page.title = "Анализ уровня заработной платы"
-        self.__page.theme_mode = f.ThemeMode.LIGHT
-        self.__page.adaptive = True
+        self.__text_link_entry = f.TextField(label="Ссылка на базу статистики")
+        self.__situation_button = f.Button(text="Получить данные...", on_click=self.__situation_button)
 
-        self.__page.vertical_alignment = f.MainAxisAlignment.CENTER
-        self.__page.horizontal_alignment = f.CrossAxisAlignment.END
+        text_entry_container = f.Container(self.__text_link_entry, alignment=f.alignment.top_center)
+        base_interface = f.Row(controls=[
+            f.Column(
+                controls=[
+                    text_entry_container,
+                    self.__situation_button
+                ]
+            )
+        ], alignment=f.MainAxisAlignment.CENTER, expand=True)
 
-        self.__page.window.width = 515
-        self.__page.window.height = 200
+        self.controls.append(base_interface)
 
-        self.__text_link_entry = f.TextField(label="Ссылка на файл")
-        self.__file_choose_button = f.Button("Выбрать файл на диске...", on_click=self.__choose_func if self.__choose_func is not None else None)
-        self.__file_parse_button = f.Button("Скачать/Спарсить файл...", on_click=self.__parsing_func if self.__parsing_func is not None else None)
+    def ViewDatatableWithData(self, data: pd.DataFrame, city: str):
+        column_indexes = data.columns.copy()
+        column_indexes.insert(0, "")
 
-        row_1 = f.Row([self.__text_link_entry, self.__file_parse_button])
-        row_2 = f.Row([self.__file_choose_button])
+        city_data = data[city].to_list()
+        city_data.insert(0, city)
 
-        base_column = f.Row([f.Column([row_1, row_2], alignment=f.alignment.top_center)], alignment=f.alignment.center)
+        return f.DataTable(columns=column_indexes, rows=city_data)
 
-        self.__page.add(base_column)
+if __name__ == "__main__":
+    def main(page: f.Page):
+        page.title = "Анализ уровня заработной платы"
+        page.theme_mode = f.ThemeMode.LIGHT
 
-    @property
-    def ChooseEvent(self):
-        return self.__choose_func
-    
-    @ChooseEvent.setter
-    def ChooseEvent(self, func: Callable):
-        self.__choose_func = func
-        self.__file_choose_button = func
+        page.adaptive = True
+        page.vertical_alignment = f.MainAxisAlignment.START
+        page.horizontal_alignment = f.CrossAxisAlignment.CENTER
 
+        page.window.width = 515
+        page.window.height = 200
 
-    @property
-    def ParsingEvent(self):
-        return self.__parsing_func
-    
-    @ParsingEvent.setter
-    def ParsingEvent(self, func: Callable):
-        self.__parsing_func = func
-        self.__file_choose_button = func
+        root = RootPage()
+        root.SetupUI()
+        
+        page.views.append(root)
+        page.go("/")
 
-    @property
-    def WorkingPage(self):
-        return self.__page
-
-    @WorkingPage.setter
-    def WorkingPage(self, page: f.Page):
-        self.__page = page 
+    f.app(main)

@@ -66,6 +66,37 @@ class MoneyDataParser:
                 return MonthEnum.Dec
 
     @staticmethod
+    def ConvertIntMonth(month_num: int):
+        match(month_num):
+            case MonthEnum.Jan:
+                return "январь"
+            case MonthEnum.Feb:
+                return "февраль"
+            case MonthEnum.Mar:
+                return "март"
+            case MonthEnum.Apr:
+                return "апрель"
+            case MonthEnum.May:
+                return "май"
+            case MonthEnum.Jun:
+                return "июнь"
+            case MonthEnum.Jul:
+                return "июль"
+            case MonthEnum.Aug:
+                return "август"
+            case MonthEnum.Sep:
+                return "сентябрь"
+            case MonthEnum.Oct:
+                return "октябрь"
+            case MonthEnum.Nov:
+                return "ноябрь"
+            case MonthEnum.Dec:
+                return "декабрь"
+            
+            case _:
+                return MonthEnum.Jan
+            
+    @staticmethod
     def GetDomain(url: str):
         return re.search(r"(https?://.*?)/", url).group(1)
 
@@ -74,21 +105,6 @@ class MoneyDataParser:
 
         self.__parser = bs.BeautifulSoup(html_file, "lxml")
         self.__domain = MoneyDataParser.GetDomain(url)
-
-    def QuartalPartition(self, links: list[str] | map | filter) -> dict[int, str]:
-        quartals = {i:[] for i in range(1, 5)}
-
-        for link in links:
-            if (re.search(r"январь|февраль|март", link) is not None):
-                quartals[1].append(link)
-            elif (re.search(r"апрель|май|июнь", link) is not None):
-                quartals[2].append(link)
-            elif (re.search(r"июль|август|сентябрь", link) is not None):
-                quartals[3].append(link)
-            elif (re.search(r"октябрь|ноябрь|декабрь", link) is not None):
-                quartals[4].append(link)
-
-        return quartals
     
     def MonthSort(self, links: list[str] | map | filter):
         return sorted(links, key=lambda element: MoneyDataParser.ConvertMonth(element).value)
