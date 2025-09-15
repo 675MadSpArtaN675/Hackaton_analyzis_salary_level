@@ -1,92 +1,85 @@
-from analyzis_module import SalaryAnalyzer
-from gigachat_service import START_MESSAGE, ANALYZE_MESSAGE
-from dotenv import load_dotenv, find_dotenv
-
-import asyncio, os
-
+import asyncio
+import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
-from loguru import logger
 
+from analyzis_module import SalaryAnalyzer
+from gigachat_service import START_MESSAGE, ANALYZE_MESSAGE
 
-load_dotenv(find_dotenv())
-bot = Bot(token=os.getenv("BOT_TOKEN"))
+import os
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+
+# Токен вашего бота (замените на свой)
+BOT_TOKEN = "7784973198:AAGWkNxfBSkPqD_yoZaZZVwe3NVP0qcfpVQ"
+
+# Инициализация бота и диспетчера
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-
-sc = SalaryAnalyzer(
+sa = SalaryAnalyzer(
     os.getenv("LINK_TO_STATISTIC"), START_MESSAGE, os.getenv("GIGACHAT_TOKEN")
 )
 filename = None
 
-logger.add(
-    "bot.log",
-    rotation="10 MB",
-    retention="10 days",
-    level="INFO",
-    format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",
-)
 
-
+# Создаем клавиатуру с кнопками
 def get_main_keyboard():
     keyboard = types.ReplyKeyboardMarkup(
         keyboard=[
-            [types.KeyboardButton(text="Анализ нынешнего квартала с предыдущим")],
-            [types.KeyboardButton(text="Анализ с этим же кварталом предыдущего года")],
+            [
+                types.KeyboardButton(text="Анализ нынешнего квартала с предыдущим"),
+                types.KeyboardButton(
+                    text="Анализ с этим же кварталом предыдущего года"
+                ),
+            ]
         ],
         resize_keyboard=True,
     )
     return keyboard
 
 
+# Обработчик команды /start
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    logger.info(f"User {message.from_user.id} started the bot")
+    global filename
+    filename = sa.DownloadFilesFromWebSite()
     await message.answer("Выберите тип анализа:", reply_markup=get_main_keyboard())
 
-    global filename
-    filename = sc.DownloadFilesFromWebSite()
 
-
+# Обработчик первой кнопки
 @dp.message(lambda message: message.text == "Анализ нынешнего квартала с предыдущим")
-async def handle_quarter_comparison(message: types.Message):
-    logger.info(f"User {message.from_user.id} selected quarter comparison")
+async def handle_current_vs_previous_quarter(message: types.Message):
+    # Здесь будет ваша логика для первого анализа
     await message.answer("Запускается анализ нынешнего квартала с предыдущим...")
+    message_sended = sa.PerformAnalysis(sa.GetData(), filename, ANALYZE_MESSAGE)
+    ready_message = "\n".join(map(lambda x: x.message, message_sended.choices))
 
-    global filename
-    message_analyz = sc.PerformAnalysis(sc.GetData(), filename, ANALYZE_MESSAGE)
-
-    await message.answer("\n".join(map(lambda x: x.message, message_analyz.choices)))
+    await message.answer(ready_message)
 
 
+# Обработчик второй кнопки
 @dp.message(
     lambda message: message.text == "Анализ с этим же кварталом предыдущего года"
 )
-async def handle_year_comparison(message: types.Message):
-    logger.info(f"User {message.from_user.id} selected year comparison")
+async def handle_current_vs_previous_year_quarter(message: types.Message):
+    # Здесь будет ваша логика для второго анализа
     await message.answer("Запускается анализ с этим же кварталом предыдущего года...")
 
 
+# Обработчик всех остальных сообщений (игнорирует текст)
 @dp.message()
-async def handle_other_messages(message: types.Message):
-    logger.info(f"User {message.from_user.id} sent unexpected message: {message.text}")
-    await message.answer("Пожалуйста, используйте кнопки для выбора действия.")
+async def ignore_other_messages(message: types.Message):
+    # Просто игнорируем текстовые сообщения, но показываем клавиатуру
+    await message.answer(
+        "Пожалуйста, используйте кнопки для выбора действия:",
+        reply_markup=get_main_keyboard(),
+    )
 
 
-@dp.errors()
-async def errors_handler(update, exception):
-    logger.error(f"Update {update} caused error: {exception}")
-    return True
-
-
+# Основная функция
 async def main():
-    logger.info("Starting bot...")
-    try:
-        await dp.start_polling(bot)
-    except Exception as e:
-        logger.error(f"Bot stopped with error: {e}")
-    finally:
-        logger.info("Bot stopped")
-        await bot.session.close()
+    await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
