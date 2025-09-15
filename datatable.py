@@ -9,6 +9,8 @@ import pdfminer.high_level as pmhl
 import pdfminer.layout as pml
 
 class PdfStatisticsParser:
+    files_start = "./files_downloaded"
+
     __data: pd.DataFrame = None
     __money_parser: MoneyDataParser
     __files_downloader: MoneyDataFilesDownloader
@@ -24,8 +26,9 @@ class PdfStatisticsParser:
 
         self.__year = year
 
-        self.__money_parser = MoneyDataParser(url)
-        self.__files_downloader = MoneyDataFilesDownloader()
+        if len(os.listdir(self.files_start)) <= 0:
+            self.__money_parser = MoneyDataParser(url)
+            self.__files_downloader = MoneyDataFilesDownloader()
 
     def UpdateYear(self, year: int):
         self.__year = year
@@ -34,16 +37,16 @@ class PdfStatisticsParser:
         if year is None:
             year = self.__year;
         
-        files_start = "./files_downloaded"
+        
 
-        if (not os.path.exists(files_start)):
-            os.mkdir(files_start)
+        if (not os.path.exists(self.files_start)):
+            os.mkdir(self.files_start)
 
-        if len(os.listdir(files_start)) <= 0:
+        if len(os.listdir(self.files_start)) <= 0:
             sorted_years = self.__get_files_names(year)
             self.__files_downloader.DownloadFiles(sorted_years)
 
-        self.__data = pd.DataFrame(data=self.__get_data_from_files(files_start))
+        self.__data = pd.DataFrame(data=self.__get_data_from_files(self.files_start))
         
         return self.__data
     

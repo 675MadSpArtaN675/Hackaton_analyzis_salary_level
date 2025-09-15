@@ -11,11 +11,13 @@ import flet as f
 import pandas as pd
 
 
+
 START_MESSAGE: Final = """
 """
 
 ANALYZE_MESSAGE: Final = """
 """
+
 
 class RootPage(f.View):
     def __init__(self, controls: Sequence[f.Control] = ()):
@@ -61,7 +63,7 @@ class RootPage(f.View):
     def __ParseData(self, sa: SalaryAnalyzer, data: pd.DataFrame, filename: str):
         message = sa.PerformAnalysis(data, filename, ANALYZE_MESSAGE)
 
-        self.city_dataFrame = self.__ViewDatatableWithData(sa.GetData(), self.__dropdown_cities.value)
+        self.__ViewDatatableWithData(sa.GetData(), self.__dropdown_cities.value)
         result_label = f.Container(
                 content=f.Text(value="\n".join(map(lambda x: x.message.content, message.choices)), size=14, no_wrap=False)
             )
@@ -82,7 +84,8 @@ class RootPage(f.View):
         city_data.insert(0, city)
         city_data = list(map(lambda x: f.DataCell(f.Text(x)), city_data))
         
-        return f.DataTable(columns=column_indexes, rows=[f.DataRow(city_data)])
+        self.city_dataFrame.columns = column_indexes
+        self.city_dataFrame.rows = [f.DataRow(city_data)]
 
 if __name__ == "__main__":
     load_dotenv(find_dotenv())
@@ -101,8 +104,8 @@ if __name__ == "__main__":
         page.vertical_alignment = f.MainAxisAlignment.START
         page.horizontal_alignment = f.CrossAxisAlignment.CENTER
 
-        page.window.width = 515
-        page.window.height = 200
+        page.window.width = 900
+        page.window.height = 600
 
         root = RootPage()
         root.SetupUI(sa, filename)
