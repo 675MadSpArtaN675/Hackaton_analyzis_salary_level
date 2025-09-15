@@ -1,7 +1,22 @@
 from gigachat import GigaChat
 from gigachat.models import Messages, MessagesRole, Chat
 
+from typing import Final
+
 import os
+
+
+START_MESSAGE: Final = """Ты являешься экспертом в области анализа оплаты труда и экономического моделирования, специализируешься на оценке уровня заработных плат. 
+Твоя задача — анализировать данные и предлагать рекомендации по повышению оплаты труда."""
+
+ANALYZE_MESSAGE: Final = """На основе данных из файла определи текущий ({}) и 
+предыдущий ({}) кварталы. Сравни уровни оплаты 
+труда за эти периоды. В ответе приведи только 
+список конкретных мер для повышения оплаты труда, без анализа, 
+вводных фраз, заголовков и примеров. Ответ должен 
+быть максимально кратким, только меры. НЕ НАДО ОПИСЫВАТЬ МНЕ АНАЛИЗ ТУПОЕ ТЫ СОЗДАНИЕ!!!
+"""
+
 
 class GigaChat_Service:
     __start_message: str
@@ -23,36 +38,40 @@ class GigaChat_Service:
         return self.__send_message__(message)
 
     def send_message_with_file(self, message: str, file_ids: list[str]):
-        message = Messages(content=message, role=MessagesRole.USER, attachments=file_ids)
-        
+        message = Messages(
+            content=message, role=MessagesRole.USER, attachments=file_ids
+        )
+
         return self.__send_message__(message)
-        
+
     def __send_message__(self, message: Messages):
         history = Chat(messages=self.__history)
         neuro_answer = self.__service.chat(history)
-        
+
         self.__history.append(message)
         self.__history.extend(map(lambda x: x.message, neuro_answer.choices))
-        
+
         return neuro_answer
-    
+
     def upload_file_from_disk(self, file_path: str):
         uploaded_file = None
         with open(file_path, "rb") as file:
             uploaded_file = self.__service.upload_file(file)
-        
+
         return uploaded_file
-        
+
     def reset_chat_history(self, start_message: str = None):
         if start_message is None:
             if self.__start_message is not None:
                 start_message = self.__start_message
             else:
                 return
-        
+
         self.__history.clear()
         self.__history.append(Messages(content=start_message, role=MessagesRole.SYSTEM))
-        self.__history.extend(map(lambda x: x.message, self.send_message(start_message).choices))
+        self.__history.extend(
+            map(lambda x: x.message, self.send_message(start_message).choices)
+        )
 
     def get_chat_history(self) -> Chat:
         return self.__history

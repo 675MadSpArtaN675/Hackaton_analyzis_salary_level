@@ -12,7 +12,6 @@ import re
 import datetime as dt
 
 
-
 class SalaryAnalyzer:
     __year: int
     __data: pd.DataFrame
@@ -24,16 +23,16 @@ class SalaryAnalyzer:
 
     @staticmethod
     def _QuartalPartition(months: list[str] | map | filter) -> dict[int, list[str]]:
-        quartals = {i:[] for i in range(1, 5)}
+        quartals = {i: [] for i in range(1, 5)}
 
         for month in months:
-            if (re.search(r"январь|февраль|март", month) is not None):
+            if re.search(r"январь|февраль|март", month) is not None:
                 quartals[1].append(month)
-            elif (re.search(r"апрель|май|июнь", month) is not None):
+            elif re.search(r"апрель|май|июнь", month) is not None:
                 quartals[2].append(month)
-            elif (re.search(r"июль|август|сентябрь", month) is not None):
+            elif re.search(r"июль|август|сентябрь", month) is not None:
                 quartals[3].append(month)
-            elif (re.search(r"октябрь|ноябрь|декабрь", month) is not None):
+            elif re.search(r"октябрь|ноябрь|декабрь", month) is not None:
                 quartals[4].append(month)
 
         return quartals
@@ -49,15 +48,15 @@ class SalaryAnalyzer:
 
             if month in elements:
                 return quartal_num
-        
+
         return last_not_empty
-    
+
     def __init__(self, url: str, start_message: str, token: str):
         self.__year = dt.date.today().year
 
         self.__parser = PdfStatisticsParser(url, self.__year)
         self.__neuro_module = GigaChat_Service(token, start_message)
-    
+
     def PerformAnalysis(self, data: pd.DataFrame, filename: str, analyze_message: str):
         self._quartal_partition = SalaryAnalyzer._QuartalPartition(data.columns)
 
@@ -68,8 +67,8 @@ class SalaryAnalyzer:
         answer = self.__neuro_module.send_message_with_file(message, [uploaded_file_id])
 
         self.__neuro_module.reset_chat_history()
-        
-        return answer 
+
+        return answer
 
     def DownloadFilesFromWebSite(self):
         data = self.__parser.ParseFiles(self.__year)
@@ -88,8 +87,10 @@ class SalaryAnalyzer:
         message = analyze_message.format(quartal, quartal - 1)
 
         return message
-    
+
 
 if __name__ == "__main__":
-    q = SalaryAnalyzer.QuartalPartition(["январь", "февраль", "март", "апрель", "май", "июнь", "июль"])
+    q = SalaryAnalyzer.QuartalPartition(
+        ["январь", "февраль", "март", "апрель", "май", "июнь", "июль"]
+    )
     print(q)

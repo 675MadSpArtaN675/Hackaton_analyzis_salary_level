@@ -8,6 +8,7 @@ import pandas as pd
 import pdfminer.high_level as pmhl
 import pdfminer.layout as pml
 
+
 class PdfStatisticsParser:
     files_start = "./files_downloaded"
 
@@ -26,20 +27,18 @@ class PdfStatisticsParser:
 
         self.__year = year
 
-        if len(os.listdir(self.files_start)) <= 0:
+        if os.path.exists(self.files_start) and len(os.listdir(self.files_start)) <= 0:
             self.__money_parser = MoneyDataParser(url)
             self.__files_downloader = MoneyDataFilesDownloader()
 
     def UpdateYear(self, year: int):
         self.__year = year
-    
-    def ParseFiles(self, year :int = None):
-        if year is None:
-            year = self.__year;
-        
-        
 
-        if (not os.path.exists(self.files_start)):
+    def ParseFiles(self, year: int = None):
+        if year is None:
+            year = self.__year
+
+        if not os.path.exists(self.files_start):
             os.mkdir(self.files_start)
 
         if len(os.listdir(self.files_start)) <= 0:
@@ -47,18 +46,18 @@ class PdfStatisticsParser:
             self.__files_downloader.DownloadFiles(sorted_years)
 
         self.__data = pd.DataFrame(data=self.__get_data_from_files(self.files_start))
-        
+
         return self.__data
-    
+
     def CreateExcelFile(self, filename: str = None):
         name = os.getenv("EXCEL_FILE_NAME") if filename is None else filename
         self.__data.to_string(buf=f"./{name}")
-        
+
         return name
 
     def GetOutputFileName(self):
         return os.getenv("EXCEL_FILE_NAME")
-    
+
     def __get_files_names(self, year: int):
         docs = self.__money_parser.GetDocLinks(os.environ["TITLE_TO_FOUND"])
         filtered = self.__money_parser.FilterByYear(docs, year)
@@ -77,14 +76,15 @@ class PdfStatisticsParser:
             files_data[name] = dict(lines)
 
         return files_data
-    
+
     def __parse_file_page(self, file_name: str, number_page: int):
         lines = []
+
         for page in pmhl.extract_pages(file_name, page_numbers=[number_page - 1]):
             for element in page:
                 if isinstance(element, pml.LTTextContainer):
                     lines.extend([sub_element for sub_element in element])
-        
+
         return self.__filter_files(lines[3:])
 
     def __filter_files(self, lines: list[pml.LTTextLine]):
@@ -103,10 +103,9 @@ class PdfStatisticsParser:
             elif re.match(r"\d+[^/\\]\s*\d+", line_str):
                 nums.append(line_str.replace(" ", ""))
 
-        sorted_nums = list(sorted(map(int, nums[:len(cities)]), reverse=True))
+        sorted_nums = list(sorted(map(int, nums[: len(cities)]), reverse=True))
 
         return zip(cities, sorted_nums)
-
 
 
 if __name__ == "__main__":
