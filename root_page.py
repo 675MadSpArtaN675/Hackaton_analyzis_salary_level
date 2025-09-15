@@ -12,14 +12,21 @@ import pandas as pd
 
 
 
-START_MESSAGE: Final = """
-"""
+START_MESSAGE: Final = """Ты являешься экспертом в области анализа оплаты труда и экономического моделирования, специализируешься на оценке уровня заработных плат. 
+Твоя задача — анализировать данные и предлагать рекомендации по повышению оплаты труда."""
 
-ANALYZE_MESSAGE: Final = """
+ANALYZE_MESSAGE: Final = """На основе данных из файла определи текущий ({}) и 
+предыдущий ({}) кварталы. Сравни уровни оплаты 
+труда за эти периоды. В ответе приведи только 
+список конкретных мер для повышения оплаты труда, без анализа, 
+вводных фраз, заголовков и примеров. Ответ должен 
+быть максимально кратким, только меры. НЕ НАДО ОПИСЫВАТЬ МНЕ АНАЛИЗ ТУПОЕ ТЫ СОЗДАНИЕ!!!
 """
 
 
 class RootPage(f.View):
+    __ready: bool = False
+
     def __init__(self, controls: Sequence[f.Control] = ()):
         super().__init__("/", controls=controls)
 
@@ -42,8 +49,10 @@ class RootPage(f.View):
         self.__situation_button = f.Button(text="Получить данные...", 
                                            on_click=lambda x: self.__ParseData(salary_analyzer, data, filename))
         
-        self.city_dataFrame = f.DataTable(columns=[f.DataColumn(f.Text("Город/Область"))], rows=[])
-
+        
+        self.city_dataFrame = f.DataTable(columns=[f.DataColumn(f.Text("Город/Область"))], 
+                                          rows=[])
+        
         base_interface = f.Row(controls=[
             f.Column(
                 controls=[
@@ -55,20 +64,34 @@ class RootPage(f.View):
                     self.__situation_button
                 ]
             )
-        ], alignment=f.MainAxisAlignment.CENTER, expand=True)
+        ], alignment=f.MainAxisAlignment.CENTER, expand=False)
+
+        self.__column_table = f.Column(controls=[
+                self.city_dataFrame
+            ], alignment=f.MainAxisAlignment.CENTER,
+            horizontal_alignment=f.MainAxisAlignment.START,
+            on_scroll=f.ScrollMode.AUTO)
+        
+        table_row = f.Row(controls=[
+            self.__column_table
+        ])
 
         self.controls.append(base_interface)
-        self.controls.append(self.city_dataFrame)
+        self.controls.append(table_row)
 
     def __ParseData(self, sa: SalaryAnalyzer, data: pd.DataFrame, filename: str):
         message = sa.PerformAnalysis(data, filename, ANALYZE_MESSAGE)
 
         self.__ViewDatatableWithData(sa.GetData(), self.__dropdown_cities.value)
-        result_label = f.Container(
-                content=f.Text(value="\n".join(map(lambda x: x.message.content, message.choices)), size=14, no_wrap=False)
-            )
+        self.__text = f.Markdown(value="\n".join(map(lambda x: x.message.content, message.choices)))
         
-        self.controls.append(result_label)
+        if not self.__ready:
+            result_label = f.Container(
+                content=self.__text
+            )
+
+            self.__column_table.controls.append(result_label)
+            self.__ready = True
 
         self.page.update()
 

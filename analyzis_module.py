@@ -60,12 +60,16 @@ class SalaryAnalyzer:
     
     def PerformAnalysis(self, data: pd.DataFrame, filename: str, analyze_message: str):
         self._quartal_partition = SalaryAnalyzer._QuartalPartition(data.columns)
-        print(self._quartal_partition[1])
+
         uploaded_file = self.__neuro_module.upload_file_from_disk(filename)
         uploaded_file_id = uploaded_file.id_
 
         message = self.__create_message(analyze_message)
-        return self.__neuro_module.send_message_with_file(message, [uploaded_file_id])
+        answer = self.__neuro_module.send_message_with_file(message, [uploaded_file_id])
+
+        self.__neuro_module.reset_chat_history()
+        
+        return answer 
 
     def DownloadFilesFromWebSite(self):
         data = self.__parser.ParseFiles(self.__year)

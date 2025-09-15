@@ -52,6 +52,7 @@ class GigaChat_Service:
         
         self.__history.clear()
         self.__history.append(Messages(content=start_message, role=MessagesRole.SYSTEM))
+        self.__history.extend(map(lambda x: x.message, self.send_message(start_message).choices))
 
     def get_chat_history(self) -> Chat:
         return self.__history
