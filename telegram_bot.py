@@ -8,6 +8,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from loguru import logger
 
+
 load_dotenv(find_dotenv())
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()

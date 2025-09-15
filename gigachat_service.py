@@ -4,6 +4,7 @@ from gigachat.models import Messages, MessagesRole, Chat
 from typing import Final
 
 import os
+import httpx
 
 
 START_MESSAGE: Final = """Ты являешься экспертом в области анализа оплаты труда и экономического моделирования, специализируешься на оценке уровня заработных плат. 
@@ -27,7 +28,9 @@ class GigaChat_Service:
     def __init__(self, key_token: str, start_message: str):
         self.__start_message = start_message
 
-        self.__service = GigaChat(credentials=key_token)
+        self.__service = GigaChat(
+            credentials=key_token, http_client=httpx.Client(verify=False)
+        )
         self.__history = []
 
         self.reset_chat_history(start_message)
