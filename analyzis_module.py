@@ -55,18 +55,28 @@ class SalaryAnalyzer:
         self.__year = dt.date.today().year
 
         self.__parser = PdfStatisticsParser(url, self.__year)
-        self.__neuro_module = GigaChat_Service(token, start_message)
+        # Откладываем создание нейромодуля до первого использования
+        self.__neuro_module = None
+        self.__token = token
+        self.__start_message = start_message
+
+    def __get_neuro_module(self):
+        """Ленивая инициализация нейромодуля"""
+        if self.__neuro_module is None:
+            self.__neuro_module = GigaChat_Service(self.__token, self.__start_message)
+        return self.__neuro_module
 
     def PerformAnalysis(self, data: pd.DataFrame, filename: str, analyze_message: str):
         self._quartal_partition = SalaryAnalyzer._QuartalPartition(data.columns)
 
-        uploaded_file = self.__neuro_module.upload_file_from_disk(filename)
+        neuro_module = self.__get_neuro_module()
+        uploaded_file = neuro_module.upload_file_from_disk(filename)
         uploaded_file_id = uploaded_file.id_
 
         message = self.__create_message(analyze_message)
-        answer = self.__neuro_module.send_message_with_file(message, [uploaded_file_id])
+        answer = neuro_module.send_message_with_file(message, [uploaded_file_id])
 
-        self.__neuro_module.reset_chat_history()
+        neuro_module.reset_chat_history()
 
         return answer
 
@@ -90,7 +100,7 @@ class SalaryAnalyzer:
 
 
 if __name__ == "__main__":
-    q = SalaryAnalyzer.QuartalPartition(
+    q = SalaryAnalyzer._QuartalPartition(
         ["январь", "февраль", "март", "апрель", "май", "июнь", "июль"]
     )
     print(q)

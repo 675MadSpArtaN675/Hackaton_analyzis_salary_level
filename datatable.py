@@ -27,9 +27,8 @@ class PdfStatisticsParser:
 
         self.__year = year
 
-        if os.path.exists(self.files_start) and len(os.listdir(self.files_start)) <= 0:
-            self.__money_parser = MoneyDataParser(url)
-            self.__files_downloader = MoneyDataFilesDownloader()
+        self.__money_parser = MoneyDataParser(url)
+        self.__files_downloader = MoneyDataFilesDownloader()
 
     def UpdateYear(self, year: int):
         self.__year = year

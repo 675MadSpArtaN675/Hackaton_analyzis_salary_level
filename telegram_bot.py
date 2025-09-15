@@ -7,20 +7,35 @@ from analyzis_module import SalaryAnalyzer
 from gigachat_service import START_MESSAGE, ANALYZE_MESSAGE
 
 import os
+from dotenv import load_dotenv, find_dotenv
+
+# Загрузка переменных окружения
+load_dotenv(find_dotenv())
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# Токен вашего бота (замените на свой)
-BOT_TOKEN = "7784973198:AAGWkNxfBSkPqD_yoZaZZVwe3NVP0qcfpVQ"
+# Токен вашего бота
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-sa = SalaryAnalyzer(
-    os.getenv("LINK_TO_STATISTIC"), START_MESSAGE, os.getenv("GIGACHAT_TOKEN")
-)
+
+# Откладываем инициализацию анализатора до первого использования
+sa = None
 filename = None
+
+def get_salary_analyzer():
+    """Ленивая инициализация анализатора"""
+    global sa
+    if sa is None:
+        sa = SalaryAnalyzer(
+            os.getenv("LINK_TO_STATISTIC"), 
+            START_MESSAGE, 
+            os.getenv("GIGACHAT_TOKEN")
+        )
+    return sa
 
 
 # Создаем клавиатуру с кнопками
@@ -43,19 +58,31 @@ def get_main_keyboard():
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     global filename
-    filename = sa.DownloadFilesFromWebSite()
-    await message.answer("Выберите тип анализа:", reply_markup=get_main_keyboard())
+    try:
+        analyzer = get_salary_analyzer()
+        filename = analyzer.DownloadFilesFromWebSite()
+        await message.answer("Данные загружены. Выберите тип анализа:", reply_markup=get_main_keyboard())
+    except Exception as e:
+        logging.error(f"Ошибка при загрузке данных: {e}")
+        await message.answer("Произошла ошибка при загрузке данных. Попробуйте позже.")
 
 
 # Обработчик первой кнопки
 @dp.message(lambda message: message.text == "Анализ нынешнего квартала с предыдущим")
 async def handle_current_vs_previous_quarter(message: types.Message):
-    # Здесь будет ваша логика для первого анализа
+    if filename is None:
+        await message.answer("Сначала загрузите данные командой /start")
+        return
+        
     await message.answer("Запускается анализ нынешнего квартала с предыдущим...")
-    message_sended = sa.PerformAnalysis(sa.GetData(), filename, ANALYZE_MESSAGE)
-    ready_message = "\n".join(map(lambda x: x.message, message_sended.choices))
-
-    await message.answer(ready_message)
+    try:
+        analyzer = get_salary_analyzer()
+        message_sended = analyzer.PerformAnalysis(analyzer.GetData(), filename, ANALYZE_MESSAGE)
+        ready_message = "\n".join([choice.message.content for choice in message_sended.choices])
+        await message.answer(ready_message)
+    except Exception as e:
+        logging.error(f"Ошибка при анализе: {e}")
+        await message.answer("Произошла ошибка при анализе данных.")
 
 
 # Обработчик второй кнопки
@@ -63,14 +90,17 @@ async def handle_current_vs_previous_quarter(message: types.Message):
     lambda message: message.text == "Анализ с этим же кварталом предыдущего года"
 )
 async def handle_current_vs_previous_year_quarter(message: types.Message):
-    # Здесь будет ваша логика для второго анализа
+    if filename is None:
+        await message.answer("Сначала загрузите данные командой /start")
+        return
+        
     await message.answer("Запускается анализ с этим же кварталом предыдущего года...")
+    # Здесь можно добавить логику для второго типа анализа
 
 
 # Обработчик всех остальных сообщений (игнорирует текст)
 @dp.message()
 async def ignore_other_messages(message: types.Message):
-    # Просто игнорируем текстовые сообщения, но показываем клавиатуру
     await message.answer(
         "Пожалуйста, используйте кнопки для выбора действия:",
         reply_markup=get_main_keyboard(),
