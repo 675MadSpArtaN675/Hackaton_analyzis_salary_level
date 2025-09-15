@@ -48,9 +48,9 @@ class PdfStatisticsParser:
     
     def CreateExcelFile(self, filename: str = None):
         name = os.getenv("EXCEL_FILE_NAME") if filename is None else filename
-
-        return self.__data.to_excel(excel_writer=f"./{name}", 
-                  sheet_name="Уровень зарплат за текущий год")
+        self.__data.to_string(buf=f"./{name}")
+        
+        return name
 
     def GetOutputFileName(self):
         return os.getenv("EXCEL_FILE_NAME")
@@ -112,3 +112,4 @@ if __name__ == "__main__":
 
     psp = PdfStatisticsParser(url, 2025)
     data = psp.ParseFiles()
+    print(data.loc["Воронежская область"])

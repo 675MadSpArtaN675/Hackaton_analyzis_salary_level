@@ -6,6 +6,8 @@ from pandas import DataFrame
 
 from typing import Final
 
+import pandas as pd
+
 import re
 import datetime as dt
 
@@ -13,6 +15,7 @@ import datetime as dt
 
 class SalaryAnalyzer:
     __year: int
+    __data: pd.DataFrame
 
     __parser: PdfStatisticsParser
     __neuro_module: GigaChat_Service
@@ -44,9 +47,7 @@ class SalaryAnalyzer:
             if elements != []:
                 last_not_empty = quartal_num
 
-            month_index = elements.index(month)
-
-            if month_index >= 0:
+            if month in elements:
                 return quartal_num
         
         return last_not_empty
@@ -57,22 +58,28 @@ class SalaryAnalyzer:
         self.__parser = PdfStatisticsParser(url, self.__year)
         self.__neuro_module = GigaChat_Service(token, start_message)
     
-    def PerformAnalysis(self, analyze_message: str):
-        data = self.__parser.ParseFiles(self.__year)
-        filename = self.__parser.GetOutputFileName()
-
-        self._quartal_partition = SalaryAnalyzer.QuartalPartition(data.columns)
-
+    def PerformAnalysis(self, data: pd.DataFrame, filename: str, analyze_message: str):
+        self._quartal_partition = SalaryAnalyzer._QuartalPartition(data.columns)
+        print(self._quartal_partition[1])
         uploaded_file = self.__neuro_module.upload_file_from_disk(filename)
         uploaded_file_id = uploaded_file.id_
 
         message = self.__create_message(analyze_message)
         return self.__neuro_module.send_message_with_file(message, [uploaded_file_id])
 
+    def DownloadFilesFromWebSite(self):
+        data = self.__parser.ParseFiles(self.__year)
+        filename = self.__parser.CreateExcelFile()
+
+        self.__data = data
+        return filename
+
+    def GetData(self):
+        return self.__data
 
     def __create_message(self, analyze_message: str):
         now_month = MoneyDataParser.ConvertIntMonth(dt.date.today().month)
-        quartal = MoneyDataParser._FindNeedQuartal(now_month)
+        quartal = SalaryAnalyzer._FindNeedQuartal(self._quartal_partition, now_month)
 
         message = analyze_message.format(quartal, quartal - 1)
 

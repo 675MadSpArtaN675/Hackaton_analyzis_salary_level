@@ -7,12 +7,14 @@ class GigaChat_Service:
     __start_message: str
 
     __service: GigaChat
-    __history: Chat
+    __history: list
 
     def __init__(self, key_token: str, start_message: str):
         self.__start_message = start_message
 
         self.__service = GigaChat(credentials=key_token)
+        self.__history = []
+
         self.reset_chat_history(start_message)
 
     def send_message(self, message: str):
@@ -26,10 +28,11 @@ class GigaChat_Service:
         return self.__send_message__(message)
         
     def __send_message__(self, message: Messages):
-        neuro_answer = self.__service.chat(self.__history)
+        history = Chat(messages=self.__history)
+        neuro_answer = self.__service.chat(history)
         
         self.__history.append(message)
-        self.__history.messages.extend(map(lambda x: x.message, neuro_answer.choices))
+        self.__history.extend(map(lambda x: x.message, neuro_answer.choices))
         
         return neuro_answer
     
@@ -38,7 +41,6 @@ class GigaChat_Service:
         with open(file_path, "rb") as file:
             uploaded_file = self.__service.upload_file(file)
         
-        os.remove(file_path)
         return uploaded_file
         
     def reset_chat_history(self, start_message: str = None):
@@ -48,9 +50,12 @@ class GigaChat_Service:
             else:
                 return
         
-        self.__history.messages.clear()
-        self.__history.messages.append(Messages(content=start_message, role=MessagesRole.SYSTEM))
+        self.__history.clear()
+        self.__history.append(Messages(content=start_message, role=MessagesRole.SYSTEM))
 
     def get_chat_history(self) -> Chat:
         return self.__history
-    
+
+
+if __name__ == "__main__":
+    pass

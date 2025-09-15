@@ -1,17 +1,8 @@
 from dotenv import load_dotenv, find_dotenv
 
-from typing import Final
-
-from pages.root_page import RootPage
+from root_page import RootPage
 
 import flet as f
-
-
-START_MESSAGE: Final = """
-"""
-
-ANALYZE_MESSAGE: Final = """
-"""
 
 
 load_dotenv(find_dotenv())
