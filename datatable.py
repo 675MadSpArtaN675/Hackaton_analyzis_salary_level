@@ -39,8 +39,9 @@ class PdfStatisticsParser:
         if (not os.path.exists(files_start)):
             os.mkdir(files_start)
 
-        sorted_years = self.__get_files_names(year)
-        self.__files_downloader.DownloadFiles(sorted_years)
+        if len(os.listdir(files_start)) <= 0:
+            sorted_years = self.__get_files_names(year)
+            self.__files_downloader.DownloadFiles(sorted_years)
 
         self.__data = pd.DataFrame(data=self.__get_data_from_files(files_start))
         
@@ -71,9 +72,7 @@ class PdfStatisticsParser:
             lines = self.__parse_file_page(filename, 7)
 
             files_data[name] = dict(lines)
-            os.remove(filename)
 
-        os.removedirs(files_start)
         return files_data
     
     def __parse_file_page(self, file_name: str, number_page: int):
