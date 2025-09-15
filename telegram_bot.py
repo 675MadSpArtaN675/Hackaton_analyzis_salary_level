@@ -15,7 +15,7 @@ load_dotenv(find_dotenv())
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# Токен вашего бота
+
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # Инициализация бота и диспетчера
@@ -26,14 +26,13 @@ dp = Dispatcher()
 sa = None
 filename = None
 
+
 def get_salary_analyzer():
     """Ленивая инициализация анализатора"""
     global sa
     if sa is None:
         sa = SalaryAnalyzer(
-            os.getenv("LINK_TO_STATISTIC"), 
-            START_MESSAGE, 
-            os.getenv("GIGACHAT_TOKEN")
+            os.getenv("LINK_TO_STATISTIC"), START_MESSAGE, os.getenv("GIGACHAT_TOKEN")
         )
     return sa
 
@@ -61,7 +60,9 @@ async def cmd_start(message: types.Message):
     try:
         analyzer = get_salary_analyzer()
         filename = analyzer.DownloadFilesFromWebSite()
-        await message.answer("Данные загружены. Выберите тип анализа:", reply_markup=get_main_keyboard())
+        await message.answer(
+            "Данные загружены. Выберите тип анализа:", reply_markup=get_main_keyboard()
+        )
     except Exception as e:
         logging.error(f"Ошибка при загрузке данных: {e}")
         await message.answer("Произошла ошибка при загрузке данных. Попробуйте позже.")
@@ -73,12 +74,16 @@ async def handle_current_vs_previous_quarter(message: types.Message):
     if filename is None:
         await message.answer("Сначала загрузите данные командой /start")
         return
-        
+
     await message.answer("Запускается анализ нынешнего квартала с предыдущим...")
     try:
         analyzer = get_salary_analyzer()
-        message_sended = analyzer.PerformAnalysis(analyzer.GetData(), filename, ANALYZE_MESSAGE)
-        ready_message = "\n".join([choice.message.content for choice in message_sended.choices])
+        message_sended = analyzer.PerformAnalysis(
+            analyzer.GetData(), filename, ANALYZE_MESSAGE
+        )
+        ready_message = "\n".join(
+            [choice.message.content for choice in message_sended.choices]
+        )
         await message.answer(ready_message)
     except Exception as e:
         logging.error(f"Ошибка при анализе: {e}")
@@ -93,7 +98,7 @@ async def handle_current_vs_previous_year_quarter(message: types.Message):
     if filename is None:
         await message.answer("Сначала загрузите данные командой /start")
         return
-        
+
     await message.answer("Запускается анализ с этим же кварталом предыдущего года...")
     # Здесь можно добавить логику для второго типа анализа
 
