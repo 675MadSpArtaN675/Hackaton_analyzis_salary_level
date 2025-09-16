@@ -1,6 +1,6 @@
 files_downloaded
 __pycache__
 .env
-salaries.txt
+.vscode
 *.xlsx
 *.docx
