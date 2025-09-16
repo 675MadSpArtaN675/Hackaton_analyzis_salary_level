@@ -100,8 +100,13 @@ class MoneyDataParser:
     def GetDomain(url: str):
         return re.search(r"(https?://.*?)/", url).group(1)
 
-    def __init__(self, url: str):
-        html_file = r.get(url).content
+    def __init__(self, url: str, html_file_path: bool = False):
+        html_file = None
+        if not html_file_path:
+            html_file = r.get(url).content
+        else:
+            with open(url, "r", encoding='utf-8') as file:
+                html_file = file.read()
 
         self.__parser = bs.BeautifulSoup(html_file, "lxml")
         self.__domain = MoneyDataParser.GetDomain(url)
@@ -185,4 +190,3 @@ if __name__ == "__main__":
     ready = md.DownloadFiles(sorted_years)
 
     print(ready)
-    

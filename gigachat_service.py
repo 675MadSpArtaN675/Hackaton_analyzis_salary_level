@@ -1,5 +1,5 @@
 from gigachat import GigaChat
-from gigachat.models import Messages, MessagesRole, Chat
+from gigachat.models import Messages, MessagesRole, Chat, UploadedFile, UploadedFiles
 
 import os
 
@@ -35,7 +35,8 @@ class GigaChat_Service:
         self.__history.extend(map(lambda x: x.message, neuro_answer.choices))
         
         return neuro_answer
-    
+
+
     def upload_file_from_disk(self, file_path: str):
         uploaded_file = None
         with open(file_path, "rb") as file:
@@ -56,6 +57,16 @@ class GigaChat_Service:
 
     def get_chat_history(self) -> Chat:
         return self.__history
+    
+    def get_files_info(self) -> UploadedFiles:
+        return self.__service.get_files()
+    
+    def clear_files(self):
+        deleted_files = []
+        for file in self.get_files_info().data:
+            deleted_files.append(self.__service.delete_file(file.filename))
+        
+        return deleted_files
 
 
 if __name__ == "__main__":
